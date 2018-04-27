@@ -15,10 +15,10 @@ func main() {
 	var token string
 	var err error
 	var f *os.File
-	dat, err := ioutil.ReadFile("apikey.txt")
+	dat, err := ioutil.ReadFile(".apikey")
 	token = string(dat)
-	if f, err = os.OpenFile("apikey.txt", os.O_RDWR, os.ModeDir); err != nil {
-		if f, err = os.Create("apikey.txt"); err != nil {
+	if f, err = os.OpenFile(".apikey", os.O_RDWR, os.ModeDir); err != nil {
+		if f, err = os.Create(".apikey"); err != nil {
 			log.Fatalln(err)
 		}
 	}
