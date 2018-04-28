@@ -3,6 +3,12 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
+	"text/tabwriter"
+	"time"
 
 	cfg "github.com/kroppt/discord-user-time-record/cfg"
 
@@ -11,6 +17,20 @@ import (
 )
 
 var conf *cfg.Config
+var starttime time.Time
+
+type trackerList struct {
+	sync.Mutex
+	LastPresence *discordgo.Presence
+	Trackers     []*gameTracker
+}
+
+type gameTracker struct {
+	Game     *discordgo.Game
+	PlayTime int64 // in seconds
+}
+
+var trackList *trackerList
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
@@ -90,6 +110,36 @@ func main() {
 			}
 		}
 	}
+
+	trackList = &trackerList{}
+
+	dg.AddHandler(guildCreate)
+	dg.AddHandler(presenceUpdate)
+
+	starttime = time.Now()
+
+	if err = dg.Open(); err != nil {
+		log.Fatalln(err)
+	}
+
+	sc := make(chan os.Signal, 1)
+	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
+	<-sc
+
+	// Cleanly close down the Discord session.
+	dg.Close()
+	printResults()
+}
+
+func printResults() {
+	const padding = 2
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, padding, ' ', tabwriter.Debug)
+	fmt.Println("\nFinal Results")
+	fmt.Fprintln(w, "Game\tTime played\t")
+	for _, game := range trackList.Trackers {
+		fmt.Fprintf(w, "%s\t%v\t\n", game.Game.Name, time.Duration(game.PlayTime)*time.Second)
+	}
+	w.Flush()
 }
 
 // This function will be called (due to AddHandler above) every time a new
@@ -103,7 +153,52 @@ func guildCreate(s *discordgo.Session, event *discordgo.GuildCreate) {
 	for _, p := range event.Presences {
 		if p.User.ID == conf.UserID {
 			// Target acquired
-
+			trackList.Lock()
+			trackList.LastPresence = p
+			trackList.Unlock()
+			if p.Game != nil {
+				log.Printf("game name %s\n", p.Game.Name)
+			}
+			break
 		}
+		// Target evaded
 	}
+	if trackList.LastPresence == nil {
+		log.Println("user not online")
+	}
+}
+
+func presenceUpdate(s *discordgo.Session, event *discordgo.PresenceUpdate) {
+	if event.User.ID == conf.UserID {
+		// Target acquired
+
+		trackList.Lock()
+		defer trackList.Unlock()
+
+		last := trackList.LastPresence
+		if last != nil && last.Game != nil {
+			log.Printf("last game name %s\n", last.Game.Name)
+		}
+		trackList.LastPresence = &event.Presence
+		if event.Presence.Game != nil {
+			log.Printf("updated game name %s\n", event.Presence.Game.Name)
+		}
+		if event.Game == nil || event.Game.Name == "" || ((last != nil && last.Game != nil) && event.Game.Name == last.Game.Name) {
+			// if no game object, no game name, or same name as last status (no change)
+			return
+		}
+		var newTime int64
+		if last != nil && last.Game != nil {
+			newTime = last.Game.TimeStamps.StartTimestamp - event.Game.TimeStamps.StartTimestamp
+		}
+		for _, t := range trackList.Trackers {
+			if t.Game != nil && (t.Game.Name == event.Game.Name) {
+				t.PlayTime += newTime
+				return
+			}
+		}
+		trackList.Trackers = append(trackList.Trackers, &gameTracker{event.Game, newTime})
+
+	}
+	// Target evaded
 }
