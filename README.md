@@ -18,6 +18,8 @@ Finally, run the program:
 
 The file `conf.toml` will be created after inputting information to the application. This can also be edited manually.
 
+Note: the configuration file will be created in the current directory until changed #2
+
 Example:
 ```
 token = "zMndOe7jFLXGawdlxMOdNvXjjOce5X"
@@ -53,12 +55,20 @@ When the Guild ID is added to the application, it will present a list of user op
 
 ## Output
 
-The output is very robust, containing start and end time of application execution and logging output containing each state change and the time.
+The output is very robust, containing start and end time of application execution and logging output containing game tracker changes and the time.
 
 Afterwards, all of the apps or games that were shown on Discord will show up in a 2-column list, like so:
 ```
-Final Results
-Game     |Time played  |
-OSRS     |2m4s         |
-Spotify  |12m20s       |
+2018/04/29 04:44:21 start time: 2018-04-29 04:44:21.506234168 -0400 EDT m=+0.146273060
+2018/04/29 04:44:21 tracking user "xyzabc" with ID "314159265358979323"
+^C
+2018/04/29 04:44:33 game tracker created: "REALLY quick game"
+2018/04/29 04:44:33 stop time: 2018-04-29 04:44:33.880262979 -0400 EDT m=+12.520301901
+2018/04/29 04:44:33 total running time 12.374028841s
+
+  Final Results
+
+|  Game               |  Time played  |
+|                     |               |
+|  REALLY quick game  |  12s          |
 ```
