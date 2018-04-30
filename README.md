@@ -1,5 +1,7 @@
 # Discord User Time Record Bot
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/kroppt/discord-user-time-record)](https://goreportcard.com/report/github.com/kroppt/discord-user-time-record)
+
 Record play times for individuals via the Discord API.
 
 ## Installation
