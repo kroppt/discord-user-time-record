@@ -20,7 +20,7 @@ Finally, run the program:
 
 The file `conf.toml` will be created after inputting information to the application. This can also be edited manually.
 
-Note: the configuration file will be created in the current directory until changed #2
+Note: the configuration file will be created in the current directory until changed [#2](https://github.com/kroppt/discord-user-time-record/issues/2)
 
 Example:
 ```
